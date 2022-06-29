@@ -1,53 +1,75 @@
-import React, {useState} from 'react';
-import logo from './logo.svg';
+import React, {useEffect, useState} from 'react';
 import './App.css';
-
-import {io, connect} from 'socket.io-client'
-const socket = connect('http://localhost:3001');
+import io from 'socket.io-client'
+const socket = io('http://localhost:3001');
 
 function App() {
-  const [message, setMessage] = useState<string | null>(null);
+    const [messageInput, setMessageInput] = useState<string | null>(null);
+    const [messageReceived, setMessageReceived] = useState<string[]>([]);
+    //Init
+    useEffect(() => {
 
-  const onSubmit = (e: any) => {
-    e.preventDefault();
-    console.log(message)
+    }, []);
 
-    socket.emit('send_message', {
-      message: message
-    })
+    const onSubmit = (e: any) => {
+        e.preventDefault();
+        socket.emit('send_message', {
+            message: messageInput
+        })
+        //Clear messages
+        setMessageInput(null)
+    }
 
-    //Clear messages
-    setMessage(null)
-  }
+    useEffect(() => {
+        socket.on('receive_message', (data) => {
+            console.log(data)
+            setMessageReceived(prevState => {
+                return [...prevState, data.message];
+            });
+        })
+    }, []);
 
-  return (
-    <div className="App">
-      <form style={{
-        margin: '0 auto',
-        width: '20%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        height: '30vh',
-      }} onSubmit={onSubmit}>
-        <div style={{
-          flex: '1'
-        }}>
-          <label htmlFor="">abc</label>
+
+    return (
+        <div className="App">
+            <form style={{
+                margin: '0 auto',
+                width: '20%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                height: '30vh',
+            }}>
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column'
+                }}>
+                    <label>App chat</label>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center'
+                    }}>
+                        <input value={messageInput || ''} onChange={(e) => setMessageInput(e.target.value)}/>
+                        <button onClick={onSubmit}>Send</button>
+                    </div>
+                </div>
+
+                <div style={{
+                    flex: '1'
+                }}>
+                    {
+                        messageReceived.length > 0 && messageReceived.map((item) => {
+                            return (
+                                <div key={item}>
+                                    <label>{item}</label>
+                                </div>
+                            )
+                        })
+                    }
+                </div>
+            </form>
         </div>
-
-
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column'
-        }}>
-          <label>App chat</label>
-          <input value={message || ''} onChange={(e)=> setMessage(e.target.value)}/>
-        </div>
-
-      </form>
-    </div>
-  );
+    );
 }
 
 export default App;
